@@ -1,0 +1,2130 @@
+<!doctype html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Industrial Print Monitor</title>
+    <script src="/_sdk/element_sdk.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0e14;
+            --bg-secondary: #141a22;
+            --bg-card: #1a2230;
+            --bg-hover: #232d3f;
+            --accent-cyan: #00d4ff;
+            --accent-orange: #ff6b35;
+            --accent-green: #00ff88;
+            --accent-yellow: #ffd93d;
+            --accent-red: #ff4757;
+            --text-primary: #e8ecf0;
+            --text-secondary: #8b95a5;
+            --border-color: #2a3545;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .dashboard-wrapper {
+            width: 100%;
+            min-height: 100%;
+            background: var(--bg-primary);
+            overflow-x: hidden;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Header */
+        .dashboard-header {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-green) 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dashboard-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin: 0;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--accent-green);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Filters */
+        .filter-bar {
+            background: var(--bg-secondary);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-select,
+        .filter-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-select:hover,
+        .filter-btn:hover {
+            border-color: var(--accent-cyan);
+            background: var(--bg-hover);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+        }
+
+        .filter-btn.active {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border-color: var(--accent-cyan);
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 1.5rem;
+        }
+
+        /* Cards */
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            height: 100%;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .metric-card:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 212, 255, 0.15);
+        }
+
+        .metric-card.expanded {
+            grid-column: span 2;
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .metric-title {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+
+        .metric-badge {
+            font-size: 0.625rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .badge-cyan {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--accent-cyan);
+        }
+
+        .badge-orange {
+            background: rgba(255, 107, 53, 0.2);
+            color: var(--accent-orange);
+        }
+
+        .badge-green {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-green);
+        }
+
+        .badge-yellow {
+            background: rgba(255, 217, 61, 0.2);
+            color: var(--accent-yellow);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value.cyan {
+            color: var(--accent-cyan);
+        }
+
+        .metric-value.orange {
+            color: var(--accent-orange);
+        }
+
+        .metric-value.green {
+            color: var(--accent-green);
+        }
+
+        .metric-value.yellow {
+            color: var(--accent-yellow);
+        }
+
+        .metric-unit {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .metric-change {
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .change-up {
+            color: var(--accent-green);
+        }
+
+        .change-down {
+            color: var(--accent-red);
+        }
+
+        /* Chart Cards */
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            height: 100%;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chart-btn {
+            background: var(--bg-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chart-btn:hover,
+        .chart-btn.active {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border-color: var(--accent-cyan);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 200px;
+        }
+
+        .chart-container.tall {
+            height: 300px;
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .icon-hours {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .icon-length {
+            background: rgba(255, 107, 53, 0.2);
+        }
+
+        .icon-electrical {
+            background: rgba(255, 217, 61, 0.2);
+        }
+
+        .icon-energy {
+            background: rgba(0, 255, 136, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .section-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        /* Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 500;
+        }
+
+        .data-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.875rem;
+        }
+
+        .data-table tr:hover {
+            background: var(--bg-hover);
+        }
+
+        .sparkline-cell {
+            width: 100px;
+        }
+
+        .sparkline {
+            height: 30px;
+        }
+
+        .param-value {
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .param-value.good {
+            color: var(--accent-green);
+        }
+
+        .param-value.warning {
+            color: var(--accent-yellow);
+        }
+
+        .param-value.critical {
+            color: var(--accent-red);
+        }
+
+        /* Machine Tabs */
+        .machine-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .machine-tab {
+            flex: 1;
+            background: var(--bg-hover);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .machine-tab:hover {
+            border-color: var(--accent-cyan);
+        }
+
+        .machine-tab.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 255, 136, 0.1) 100%);
+            border-color: var(--accent-cyan);
+        }
+
+        .machine-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .machine-status {
+            font-size: 0.75rem;
+            color: var(--accent-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
+        .machine-status.offline {
+            color: var(--accent-red);
+        }
+
+        /* Export Button */
+        .export-btn {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-green) 100%);
+            border: none;
+            color: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Drill Down Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90%;
+            overflow: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .metric-value {
+                font-size: 1.5rem;
+            }
+
+            .chart-container {
+                height: 180px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                padding: 1rem;
+            }
+
+            .filter-bar {
+                padding: 1rem;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .section-header {
+                flex-wrap: wrap;
+            }
+
+            .data-table {
+                font-size: 0.75rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.5rem;
+            }
+
+            .sparkline-cell {
+                display: none;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .logo-container .dashboard-title {
+                font-size: 1rem;
+            }
+
+            .filter-group {
+                width: 100%;
+            }
+
+            .filter-select {
+                flex: 1;
+            }
+
+            .metric-card {
+                padding: 1rem;
+            }
+
+            .metric-value {
+                font-size: 1.25rem;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-cyan);
+        }
+
+        /* Legend */
+        .chart-legend {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 0.75rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* Table Container */
+        .table-container {
+            overflow-x: auto;
+        }
+    </style>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+    <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+</head>
+
+<body class="h-full">
+    <div class="dashboard-wrapper" id="dashboard"><!-- Header -->
+        <header class="dashboard-header">
+            <div class="container-fluid">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <div class="logo-container">
+                            <div class="logo-icon">
+                                <svg width="24" height="24" viewbox="0 0 24 24" fill="none">
+                                    <path d="M4 6h16M4 12h16M4 18h16" stroke="#0a0e14" stroke-width="2"
+                                        stroke-linecap="round" />
+                                    <circle cx="8" cy="6" r="2" fill="#0a0e14" />
+                                    <circle cx="16" cy="12" r="2" fill="#0a0e14" />
+                                    <circle cx="12" cy="18" r="2" fill="#0a0e14" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 class="dashboard-title" id="mainTitle">Industrial Print Monitor</h1>
+                                <div class="status-indicator"><span class="status-dot"></span> <span class="mono">LIVE
+                                        DATA</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-auto ms-auto">
+                        <div class="d-flex align-items-center gap-3"><span class="text-secondary"
+                                style="font-size: 0.75rem;">Last Update:</span> <span class="mono" id="lastUpdate"
+                                style="font-size: 0.875rem; color: var(--accent-cyan);">--:--:--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header><!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-group"><span class="filter-label">Machine:</span> <select class="filter-select"
+                    id="machineFilter">
+                    <option value="all">All Machines</option>
+                    <option value="m1">Machine 1</option>
+                    <option value="m2">Machine 2</option>
+                </select>
+            </div>
+            <div class="filter-group"><span class="filter-label">Time Range:</span> <button class="filter-btn active"
+                    data-range="hour">Hour</button> <button class="filter-btn" data-range="shift">Shift</button> <button
+                    class="filter-btn" data-range="day">Day</button> <button class="filter-btn"
+                    data-range="week">Week</button> <button class="filter-btn" data-range="month">Month</button>
+            </div>
+            <div class="filter-group ms-auto"><button class="export-btn" onclick="exportData()">
+                    <svg width="16" height="16" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7,10 12,15 17,10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg> Export CSV </button>
+            </div>
+        </div><!-- Main Content -->
+        <main class="main-content"><!-- Machine Status Tabs -->
+            <div class="machine-tabs">
+                <div class="machine-tab active" data-machine="m1">
+                    <div class="machine-name" id="machine1Name">
+                        Machine 1
+                    </div>
+                    <div class="machine-status"><span class="status-dot" style="width:6px;height:6px;"></span> Running
+                    </div>
+                </div>
+                <div class="machine-tab" data-machine="m2">
+                    <div class="machine-name" id="machine2Name">
+                        Machine 2
+                    </div>
+                    <div class="machine-status"><span class="status-dot" style="width:6px;height:6px;"></span> Running
+                    </div>
+                </div>
+            </div><!-- Section A: Running Hours -->
+            <section class="mb-4">
+                <div class="section-header">
+                    <div class="section-icon icon-hours">
+                        ⏱️
+                    </div>
+                    <div>
+                        <h2 class="section-title">Running Hours</h2>
+                        <p class="section-subtitle">Machine operation time analysis</p>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3"><!-- KPI Cards -->
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('hours', 'total')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Total Running</h3><span
+                                    class="metric-badge badge-cyan">24H</span>
+                            </div>
+                            <div class="metric-value cyan" id="totalHours">
+                                18.5<span class="metric-unit">hrs</span>
+                            </div>
+                            <div class="metric-change change-up">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> +12.3% vs yesterday
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('hours', 'avg')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Avg Per Hour</h3><span
+                                    class="metric-badge badge-cyan">RATE</span>
+                            </div>
+                            <div class="metric-value cyan" id="avgHours">
+                                0.77<span class="metric-unit">hrs</span>
+                            </div>
+                            <div class="metric-change change-up">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> +5.2% efficiency
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('hours', 'uptime')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Uptime</h3><span class="metric-badge badge-green">STATUS</span>
+                            </div>
+                            <div class="metric-value green" id="uptimePercent">
+                                92.3<span class="metric-unit">%</span>
+                            </div>
+                            <div class="metric-change change-up">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> Above target
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('hours', 'downtime')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Downtime</h3><span
+                                    class="metric-badge badge-yellow">ALERT</span>
+                            </div>
+                            <div class="metric-value yellow" id="downtimeHours">
+                                1.85<span class="metric-unit">hrs</span>
+                            </div>
+                            <div class="metric-change change-down">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor"
+                                    style="transform:rotate(180deg)">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> -8.1% vs avg
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Running Hours Per Hour</h4>
+                                <div class="chart-actions"><button class="chart-btn active"
+                                        data-view="line">Line</button> <button class="chart-btn"
+                                        data-view="area">Area</button>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="hoursLineChart"></canvas>
+                            </div>
+                            <div class="chart-legend">
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: var(--accent-cyan)"></span>Machine 1
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: var(--accent-orange)"></span>Machine 2
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Running Hours Per Shift</h4>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="hoursBarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Historical Trend: Weekly &amp; Monthly</h4>
+                                <div class="chart-actions"><button class="chart-btn active"
+                                        data-period="weekly">Weekly</button> <button class="chart-btn"
+                                        data-period="monthly">Monthly</button>
+                                </div>
+                            </div>
+                            <div class="chart-container tall">
+                                <canvas id="hoursTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section><!-- Section B: Running Length -->
+            <section class="mb-4">
+                <div class="section-header">
+                    <div class="section-icon icon-length">
+                        📏
+                    </div>
+                    <div>
+                        <h2 class="section-title">Running Length (Meters)</h2>
+                        <p class="section-subtitle">Production output measurement</p>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('length', 'total')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Total Length</h3><span
+                                    class="metric-badge badge-orange">24H</span>
+                            </div>
+                            <div class="metric-value orange" id="totalLength">
+                                45,280<span class="metric-unit">m</span>
+                            </div>
+                            <div class="metric-change change-up">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> +15.7% vs yesterday
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('length', 'avg')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Avg Per Hour</h3><span
+                                    class="metric-badge badge-orange">RATE</span>
+                            </div>
+                            <div class="metric-value orange" id="avgLength">
+                                1,887<span class="metric-unit">m/h</span>
+                            </div>
+                            <div class="metric-change change-up">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> +3.4% efficiency
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('length', 'speed')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Current Speed</h3><span
+                                    class="metric-badge badge-green">LIVE</span>
+                            </div>
+                            <div class="metric-value green" id="currentSpeed">
+                                2,150<span class="metric-unit">m/h</span>
+                            </div>
+                            <div class="metric-change change-up">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> Optimal range
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('length', 'target')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Target Progress</h3><span
+                                    class="metric-badge badge-cyan">GOAL</span>
+                            </div>
+                            <div class="metric-value cyan" id="targetProgress">
+                                87.5<span class="metric-unit">%</span>
+                            </div>
+                            <div class="metric-change change-up">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> On track
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Running Length Per Hour</h4>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="lengthLineChart"></canvas>
+                            </div>
+                            <div class="chart-legend">
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: var(--accent-cyan)"></span>Machine 1
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: var(--accent-orange)"></span>Machine 2
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Running Length Per Shift</h4>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="lengthBarChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Historical Trend: Production Output</h4>
+                                <div class="chart-actions"><button class="chart-btn active"
+                                        data-period="weekly">Weekly</button> <button class="chart-btn"
+                                        data-period="monthly">Monthly</button>
+                                </div>
+                            </div>
+                            <div class="chart-container tall">
+                                <canvas id="lengthTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section><!-- Section C: Electrical Parameters -->
+            <section class="mb-4">
+                <div class="section-header">
+                    <div class="section-icon icon-electrical">
+                        ⚡
+                    </div>
+                    <div>
+                        <h2 class="section-title">Electrical Parameters</h2>
+                        <p class="section-subtitle">Real-time power monitoring per machine</p>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Machine 1 - Electrical Data</h4><button class="export-btn"
+                                    style="font-size:0.75rem; padding:0.375rem 0.75rem;" onclick="exportTable('m1')">
+                                    Export </button>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table" id="electricalTableM1">
+                                    <thead>
+                                        <tr>
+                                            <th>Parameter</th>
+                                            <th>Current Value</th>
+                                            <th>Min (24h)</th>
+                                            <th>Max (24h)</th>
+                                            <th>Avg (24h)</th>
+                                            <th class="sparkline-cell">Trend</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Active Energy</td>
+                                            <td class="param-value good mono">842.5 kWh</td>
+                                            <td class="mono">28.4 kWh</td>
+                                            <td class="mono">45.2 kWh</td>
+                                            <td class="mono">35.1 kWh</td>
+                                            <td class="sparkline-cell">
+                                                <canvas class="sparkline" id="sparkM1Energy"></canvas>
+                                            </td>
+                                            <td><span class="metric-badge badge-green">Normal</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Active Power</td>
+                                            <td class="param-value good mono">38.7 kW</td>
+                                            <td class="mono">32.1 kW</td>
+                                            <td class="mono">48.5 kW</td>
+                                            <td class="mono">38.2 kW</td>
+                                            <td class="sparkline-cell">
+                                                <canvas class="sparkline" id="sparkM1Power"></canvas>
+                                            </td>
+                                            <td><span class="metric-badge badge-green">Normal</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Current</td>
+                                            <td class="param-value warning mono">58.2 A</td>
+                                            <td class="mono">48.5 A</td>
+                                            <td class="mono">72.3 A</td>
+                                            <td class="mono">56.8 A</td>
+                                            <td class="sparkline-cell">
+                                                <canvas class="sparkline" id="sparkM1Current"></canvas>
+                                            </td>
+                                            <td><span class="metric-badge badge-yellow">High</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Power Factor</td>
+                                            <td class="param-value good mono">0.94</td>
+                                            <td class="mono">0.89</td>
+                                            <td class="mono">0.97</td>
+                                            <td class="mono">0.93</td>
+                                            <td class="sparkline-cell">
+                                                <canvas class="sparkline" id="sparkM1PF"></canvas>
+                                            </td>
+                                            <td><span class="metric-badge badge-green">Good</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Machine 2 - Electrical Data</h4><button class="export-btn"
+                                    style="font-size:0.75rem; padding:0.375rem 0.75rem;" onclick="exportTable('m2')">
+                                    Export </button>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table" id="electricalTableM2">
+                                    <thead>
+                                        <tr>
+                                            <th>Parameter</th>
+                                            <th>Current Value</th>
+                                            <th>Min (24h)</th>
+                                            <th>Max (24h)</th>
+                                            <th>Avg (24h)</th>
+                                            <th class="sparkline-cell">Trend</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Active Energy</td>
+                                            <td class="param-value good mono">756.3 kWh</td>
+                                            <td class="mono">25.8 kWh</td>
+                                            <td class="mono">42.1 kWh</td>
+                                            <td class="mono">31.5 kWh</td>
+                                            <td class="sparkline-cell">
+                                                <canvas class="sparkline" id="sparkM2Energy"></canvas>
+                                            </td>
+                                            <td><span class="metric-badge badge-green">Normal</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Active Power</td>
+                                            <td class="param-value good mono">35.2 kW</td>
+                                            <td class="mono">28.6 kW</td>
+                                            <td class="mono">44.8 kW</td>
+                                            <td class="mono">34.7 kW</td>
+                                            <td class="sparkline-cell">
+                                                <canvas class="sparkline" id="sparkM2Power"></canvas>
+                                            </td>
+                                            <td><span class="metric-badge badge-green">Normal</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Current</td>
+                                            <td class="param-value good mono">52.8 A</td>
+                                            <td class="mono">44.2 A</td>
+                                            <td class="mono">68.5 A</td>
+                                            <td class="mono">51.2 A</td>
+                                            <td class="sparkline-cell">
+                                                <canvas class="sparkline" id="sparkM2Current"></canvas>
+                                            </td>
+                                            <td><span class="metric-badge badge-green">Normal</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Power Factor</td>
+                                            <td class="param-value good mono">0.92</td>
+                                            <td class="mono">0.87</td>
+                                            <td class="mono">0.95</td>
+                                            <td class="mono">0.91</td>
+                                            <td class="sparkline-cell">
+                                                <canvas class="sparkline" id="sparkM2PF"></canvas>
+                                            </td>
+                                            <td><span class="metric-badge badge-green">Good</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section><!-- Section D: Energy + Production Combined -->
+            <section class="mb-4">
+                <div class="section-header">
+                    <div class="section-icon icon-energy">
+                        🔋
+                    </div>
+                    <div>
+                        <h2 class="section-title">Energy + Production Analysis</h2>
+                        <p class="section-subtitle">Consumption efficiency &amp; correlation insights</p>
+                    </div>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('energy', 'perHour')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Energy / Running Hour</h3><span
+                                    class="metric-badge badge-green">EFFICIENCY</span>
+                            </div>
+                            <div class="metric-value green" id="energyPerHour">
+                                86.3<span class="metric-unit">kWh/hr</span>
+                            </div>
+                            <div class="metric-change change-up">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> -4.2% improved
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('energy', 'perMeter')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Energy / Meter</h3><span
+                                    class="metric-badge badge-green">COST</span>
+                            </div>
+                            <div class="metric-value green" id="energyPerMeter">
+                                0.035<span class="metric-unit">kWh/m</span>
+                            </div>
+                            <div class="metric-change change-up">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> -2.8% vs avg
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('energy', 'total')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Total Energy</h3><span
+                                    class="metric-badge badge-cyan">24H</span>
+                            </div>
+                            <div class="metric-value cyan" id="totalEnergy">
+                                1,598<span class="metric-unit">kWh</span>
+                            </div>
+                            <div class="metric-change change-down">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor"
+                                    style="transform:rotate(180deg)">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> +8.5% vs yesterday
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="metric-card" onclick="openDrillDown('energy', 'correlation')">
+                            <div class="metric-header">
+                                <h3 class="metric-title">Correlation</h3><span
+                                    class="metric-badge badge-yellow">R²</span>
+                            </div>
+                            <div class="metric-value yellow" id="correlation">
+                                0.94<span class="metric-unit"></span>
+                            </div>
+                            <div class="metric-change change-up">
+                                <svg width="12" height="12" viewbox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 4l8 8h-6v8h-4v-8H4l8-8z" />
+                                </svg> Strong correlation
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Energy vs Running Length (Efficiency)</h4>
+                            </div>
+                            <div class="chart-container tall">
+                                <canvas id="scatterChart"></canvas>
+                            </div>
+                            <div class="chart-legend">
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: var(--accent-cyan)"></span>Machine 1
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: var(--accent-orange)"></span>Machine 2
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot" style="background: var(--accent-green)"></span>Trend Line
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Consumption vs Production (Shift-wise)</h4>
+                            </div>
+                            <div class="chart-container tall">
+                                <canvas id="comparisonShiftChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Hourly Energy &amp; Production</h4>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="hourlyCompareChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4 class="chart-title">Weekly &amp; Monthly Overview</h4>
+                                <div class="chart-actions"><button class="chart-btn active"
+                                        data-period="weekly">Weekly</button> <button class="chart-btn"
+                                        data-period="monthly">Monthly</button>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="periodCompareChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section><!-- Insights Panel -->
+            <section class="mb-4">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h4 class="chart-title">💡 Actionable Insights</h4>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <div
+                                style="background: rgba(0, 255, 136, 0.1); border: 1px solid var(--accent-green); border-radius: 8px; padding: 1rem;">
+                                <h5 style="color: var(--accent-green); font-size: 0.875rem; margin-bottom: 0.5rem;">✓
+                                    Efficiency Gain</h5>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">Machine 1 shows
+                                    <strong style="color: var(--text-primary)">4.2% lower</strong> energy consumption
+                                    per running hour compared to last week. Optimal operating conditions achieved during
+                                    Shift B.</p>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div
+                                style="background: rgba(255, 217, 61, 0.1); border: 1px solid var(--accent-yellow); border-radius: 8px; padding: 1rem;">
+                                <h5 style="color: var(--accent-yellow); font-size: 0.875rem; margin-bottom: 0.5rem;">⚠
+                                    Attention Required</h5>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">Machine 1 current
+                                    draw is <strong style="color: var(--text-primary)">trending high</strong> (58.2A).
+                                    Consider scheduling maintenance check to prevent potential issues.</p>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div
+                                style="background: rgba(0, 212, 255, 0.1); border: 1px solid var(--accent-cyan); border-radius: 8px; padding: 1rem;">
+                                <h5 style="color: var(--accent-cyan); font-size: 0.875rem; margin-bottom: 0.5rem;">📊
+                                    Production Insight</h5>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;"><strong
+                                        style="color: var(--text-primary)">0.035 kWh/meter</strong> consumption rate. At
+                                    current production speed, estimated daily energy cost is <strong
+                                        style="color: var(--text-primary)">$127.84</strong>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main><!-- Drill Down Modal -->
+        <div class="modal-overlay" id="drillDownModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="modalTitle">Detailed View</h3><button class="modal-close"
+                        onclick="closeDrillDown()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="chart-container tall">
+                        <canvas id="drillDownChart"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <div class="table-container">
+                            <table class="data-table" id="drillDownTable">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Machine 1</th>
+                                        <th>Machine 2</th>
+                                        <th>Total</th>
+                                        <th>Change</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="drillDownTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Default configuration
+        const defaultConfig = {
+            dashboard_title: 'Industrial Print Monitor',
+            machine_1_name: 'Machine 1',
+            machine_2_name: 'Machine 2',
+            background_color: '#0a0e14',
+            card_color: '#1a2230',
+            text_color: '#e8ecf0',
+            accent_color: '#00d4ff',
+            secondary_accent: '#ff6b35'
+        };
+
+        let config = { ...defaultConfig };
+        let charts = {};
+        let selectedMachine = 'all';
+        let selectedTimeRange = 'hour';
+
+        // Chart.js global defaults for dark theme
+        Chart.defaults.color = '#8b95a5';
+        Chart.defaults.borderColor = '#2a3545';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        // Generate sample data
+        function generateHourlyData(hours = 24) {
+            return Array.from({ length: hours }, (_, i) => ({
+                hour: i,
+                m1: Math.random() * 0.8 + 0.3,
+                m2: Math.random() * 0.75 + 0.25
+            }));
+        }
+
+        function generateShiftData() {
+            return [
+                { shift: 'Shift A (06:00-14:00)', m1: 5.8, m2: 5.2 },
+                { shift: 'Shift B (14:00-22:00)', m1: 6.4, m2: 5.8 },
+                { shift: 'Shift C (22:00-06:00)', m1: 4.2, m2: 3.9 }
+            ];
+        }
+
+        function generateWeeklyData() {
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            return days.map(day => ({
+                day,
+                hours: Math.random() * 8 + 14,
+                length: Math.random() * 20000 + 35000,
+                energy: Math.random() * 400 + 1200
+            }));
+        }
+
+        function generateScatterData(points = 50) {
+            const data = [];
+            for (let i = 0; i < points; i++) {
+                const length = Math.random() * 3000 + 500;
+                const energy = length * (0.03 + Math.random() * 0.02);
+                data.push({ x: length, y: energy, machine: Math.random() > 0.5 ? 'm1' : 'm2' });
+            }
+            return data;
+        }
+
+        function generateSparklineData(points = 20) {
+            return Array.from({ length: points }, () => Math.random() * 30 + 20);
+        }
+
+        // Initialize all charts
+        function initCharts() {
+            // Hours Line Chart
+            const hoursLineCtx = document.getElementById('hoursLineChart').getContext('2d');
+            const hourlyData = generateHourlyData();
+            charts.hoursLine = new Chart(hoursLineCtx, {
+                type: 'line',
+                data: {
+                    labels: hourlyData.map(d => `${d.hour}:00`),
+                    datasets: [
+                        {
+                            label: config.machine_1_name,
+                            data: hourlyData.map(d => d.m1),
+                            borderColor: '#00d4ff',
+                            backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2
+                        },
+                        {
+                            label: config.machine_2_name,
+                            data: hourlyData.map(d => d.m2),
+                            borderColor: '#ff6b35',
+                            backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a3545' }, ticks: { callback: v => v.toFixed(1) + 'h' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Hours Bar Chart
+            const hoursBarCtx = document.getElementById('hoursBarChart').getContext('2d');
+            const shiftData = generateShiftData();
+            charts.hoursBar = new Chart(hoursBarCtx, {
+                type: 'bar',
+                data: {
+                    labels: shiftData.map(d => d.shift),
+                    datasets: [
+                        {
+                            label: config.machine_1_name,
+                            data: shiftData.map(d => d.m1),
+                            backgroundColor: '#00d4ff',
+                            borderRadius: 4
+                        },
+                        {
+                            label: config.machine_2_name,
+                            data: shiftData.map(d => d.m2),
+                            backgroundColor: '#ff6b35',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a3545' }, ticks: { callback: v => v + 'h' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Hours Trend Chart
+            const hoursTrendCtx = document.getElementById('hoursTrendChart').getContext('2d');
+            const weeklyData = generateWeeklyData();
+            charts.hoursTrend = new Chart(hoursTrendCtx, {
+                type: 'line',
+                data: {
+                    labels: weeklyData.map(d => d.day),
+                    datasets: [{
+                        label: 'Running Hours',
+                        data: weeklyData.map(d => d.hours),
+                        borderColor: '#00d4ff',
+                        backgroundColor: 'rgba(0, 212, 255, 0.2)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#00d4ff',
+                        pointBorderColor: '#0a0e14',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a3545' }, ticks: { callback: v => v + 'h' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Length Line Chart
+            const lengthLineCtx = document.getElementById('lengthLineChart').getContext('2d');
+            charts.lengthLine = new Chart(lengthLineCtx, {
+                type: 'line',
+                data: {
+                    labels: hourlyData.map(d => `${d.hour}:00`),
+                    datasets: [
+                        {
+                            label: config.machine_1_name,
+                            data: hourlyData.map(d => d.m1 * 2500),
+                            borderColor: '#00d4ff',
+                            backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2
+                        },
+                        {
+                            label: config.machine_2_name,
+                            data: hourlyData.map(d => d.m2 * 2400),
+                            borderColor: '#ff6b35',
+                            backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a3545' }, ticks: { callback: v => (v / 1000).toFixed(1) + 'km' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Length Bar Chart
+            const lengthBarCtx = document.getElementById('lengthBarChart').getContext('2d');
+            charts.lengthBar = new Chart(lengthBarCtx, {
+                type: 'bar',
+                data: {
+                    labels: shiftData.map(d => d.shift),
+                    datasets: [
+                        {
+                            label: config.machine_1_name,
+                            data: shiftData.map(d => d.m1 * 2500),
+                            backgroundColor: '#00d4ff',
+                            borderRadius: 4
+                        },
+                        {
+                            label: config.machine_2_name,
+                            data: shiftData.map(d => d.m2 * 2400),
+                            backgroundColor: '#ff6b35',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a3545' }, ticks: { callback: v => (v / 1000).toFixed(0) + 'km' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Length Trend Chart
+            const lengthTrendCtx = document.getElementById('lengthTrendChart').getContext('2d');
+            charts.lengthTrend = new Chart(lengthTrendCtx, {
+                type: 'bar',
+                data: {
+                    labels: weeklyData.map(d => d.day),
+                    datasets: [{
+                        label: 'Running Length',
+                        data: weeklyData.map(d => d.length),
+                        backgroundColor: '#ff6b35',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#2a3545' }, ticks: { callback: v => (v / 1000).toFixed(0) + 'km' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Scatter Chart
+            const scatterCtx = document.getElementById('scatterChart').getContext('2d');
+            const scatterData = generateScatterData();
+            charts.scatter = new Chart(scatterCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: config.machine_1_name,
+                            data: scatterData.filter(d => d.machine === 'm1').map(d => ({ x: d.x, y: d.y })),
+                            backgroundColor: 'rgba(0, 212, 255, 0.6)',
+                            borderColor: '#00d4ff',
+                            pointRadius: 6
+                        },
+                        {
+                            label: config.machine_2_name,
+                            data: scatterData.filter(d => d.machine === 'm2').map(d => ({ x: d.x, y: d.y })),
+                            backgroundColor: 'rgba(255, 107, 53, 0.6)',
+                            borderColor: '#ff6b35',
+                            pointRadius: 6
+                        },
+                        {
+                            label: 'Trend Line',
+                            data: [{ x: 500, y: 17.5 }, { x: 3500, y: 122.5 }],
+                            type: 'line',
+                            borderColor: '#00ff88',
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Running Length (m)', color: '#8b95a5' },
+                            grid: { color: '#2a3545' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Energy (kWh)', color: '#8b95a5' },
+                            grid: { color: '#2a3545' }
+                        }
+                    }
+                }
+            });
+
+            // Comparison Shift Chart
+            const compShiftCtx = document.getElementById('comparisonShiftChart').getContext('2d');
+            charts.comparisonShift = new Chart(compShiftCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Shift A', 'Shift B', 'Shift C'],
+                    datasets: [
+                        {
+                            label: 'Energy (kWh)',
+                            data: [520, 680, 398],
+                            backgroundColor: '#00d4ff',
+                            borderRadius: 4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Production (km)',
+                            data: [14.5, 18.2, 12.6],
+                            backgroundColor: '#ff6b35',
+                            borderRadius: 4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { usePointStyle: true, boxWidth: 8 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            grid: { color: '#2a3545' },
+                            ticks: { callback: v => v + ' kWh' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            grid: { display: false },
+                            ticks: { callback: v => v + ' km' }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Hourly Compare Chart
+            const hourlyCompCtx = document.getElementById('hourlyCompareChart').getContext('2d');
+            const hours = Array.from({ length: 12 }, (_, i) => `${i * 2}:00`);
+            charts.hourlyCompare = new Chart(hourlyCompCtx, {
+                type: 'line',
+                data: {
+                    labels: hours,
+                    datasets: [
+                        {
+                            label: 'Energy (kWh)',
+                            data: hours.map(() => Math.random() * 40 + 50),
+                            borderColor: '#00d4ff',
+                            backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Production (km)',
+                            data: hours.map(() => Math.random() * 3 + 2),
+                            borderColor: '#ff6b35',
+                            backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { usePointStyle: true, boxWidth: 8 }
+                        }
+                    },
+                    scales: {
+                        y: { grid: { color: '#2a3545' }, position: 'left' },
+                        y1: { grid: { display: false }, position: 'right' },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Period Compare Chart
+            const periodCtx = document.getElementById('periodCompareChart').getContext('2d');
+            charts.periodCompare = new Chart(periodCtx, {
+                type: 'bar',
+                data: {
+                    labels: weeklyData.map(d => d.day),
+                    datasets: [
+                        {
+                            label: 'Energy',
+                            data: weeklyData.map(d => d.energy),
+                            backgroundColor: '#00d4ff',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Production',
+                            data: weeklyData.map(d => d.length / 30),
+                            backgroundColor: '#00ff88',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { usePointStyle: true, boxWidth: 8 }
+                        }
+                    },
+                    scales: {
+                        y: { grid: { color: '#2a3545' }, stacked: false },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Initialize sparklines
+            initSparklines();
+        }
+
+        function initSparklines() {
+            const sparklineConfigs = [
+                { id: 'sparkM1Energy', color: '#00ff88' },
+                { id: 'sparkM1Power', color: '#00d4ff' },
+                { id: 'sparkM1Current', color: '#ffd93d' },
+                { id: 'sparkM1PF', color: '#00ff88' },
+                { id: 'sparkM2Energy', color: '#00ff88' },
+                { id: 'sparkM2Power', color: '#00d4ff' },
+                { id: 'sparkM2Current', color: '#00ff88' },
+                { id: 'sparkM2PF', color: '#00ff88' }
+            ];
+
+            sparklineConfigs.forEach(cfg => {
+                const canvas = document.getElementById(cfg.id);
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: Array(20).fill(''),
+                            datasets: [{
+                                data: generateSparklineData(),
+                                borderColor: cfg.color,
+                                borderWidth: 1.5,
+                                fill: false,
+                                tension: 0.4,
+                                pointRadius: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { display: false },
+                                y: { display: false }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        // Filter handlers
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                selectedTimeRange = this.dataset.range;
+                updateCharts();
+            });
+        });
+
+        document.getElementById('machineFilter').addEventListener('change', function () {
+            selectedMachine = this.value;
+            updateCharts();
+        });
+
+        // Machine tab handlers
+        document.querySelectorAll('.machine-tab').forEach(tab => {
+            tab.addEventListener('click', function () {
+                document.querySelectorAll('.machine-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('machineFilter').value = this.dataset.machine;
+                selectedMachine = this.dataset.machine;
+                updateCharts();
+            });
+        });
+
+        // Chart button handlers
+        document.querySelectorAll('.chart-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const parent = this.closest('.chart-actions');
+                parent.querySelectorAll('.chart-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        function updateCharts() {
+            // Simulate data refresh
+            Object.values(charts).forEach(chart => {
+                if (chart && chart.update) {
+                    chart.data.datasets.forEach(dataset => {
+                        if (Array.isArray(dataset.data)) {
+                            dataset.data = dataset.data.map(v =>
+                                typeof v === 'number' ? v * (0.9 + Math.random() * 0.2) : v
+                            );
+                        }
+                    });
+                    chart.update('none');
+                }
+            });
+
+            // Update KPIs
+            document.getElementById('totalHours').innerHTML = (Math.random() * 4 + 16).toFixed(1) + '<span class="metric-unit">hrs</span>';
+            document.getElementById('totalLength').innerHTML = Math.floor(Math.random() * 10000 + 40000).toLocaleString() + '<span class="metric-unit">m</span>';
+            document.getElementById('totalEnergy').innerHTML = Math.floor(Math.random() * 400 + 1400).toLocaleString() + '<span class="metric-unit">kWh</span>';
+        }
+
+        // Drill down functionality
+        function openDrillDown(category, metric) {
+            const modal = document.getElementById('drillDownModal');
+            const title = document.getElementById('modalTitle');
+            const tableBody = document.getElementById('drillDownTableBody');
+
+            const titles = {
+                hours: { total: 'Total Running Hours - Detailed', avg: 'Average Running Rate', uptime: 'Uptime Analysis', downtime: 'Downtime Breakdown' },
+                length: { total: 'Total Production Length', avg: 'Average Production Rate', speed: 'Current Speed Analysis', target: 'Target Progress Details' },
+                energy: { perHour: 'Energy Per Running Hour', perMeter: 'Energy Per Meter', total: 'Total Energy Consumption', correlation: 'Energy-Production Correlation' }
+            };
+
+            title.textContent = titles[category]?.[metric] || 'Detailed View';
+
+            // Generate drill-down table data
+            tableBody.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                const m1 = (Math.random() * 2 + 0.5).toFixed(2);
+                const m2 = (Math.random() * 1.8 + 0.4).toFixed(2);
+                const total = (parseFloat(m1) + parseFloat(m2)).toFixed(2);
+                const change = (Math.random() * 20 - 10).toFixed(1);
+                const changeClass = parseFloat(change) >= 0 ? 'change-up' : 'change-down';
+
+                tableBody.innerHTML += `
+                    <tr>
+                        <td class="mono">${String(i * 2).padStart(2, '0')}:00</td>
+                        <td class="mono">${m1}</td>
+                        <td class="mono">${m2}</td>
+                        <td class="mono" style="font-weight:600">${total}</td>
+                        <td class="${changeClass}">${change >= 0 ? '+' : ''}${change}%</td>
+                    </tr>
+                `;
+            }
+
+            // Initialize drill-down chart
+            const chartCanvas = document.getElementById('drillDownChart');
+            if (charts.drillDown) {
+                charts.drillDown.destroy();
+            }
+
+            charts.drillDown = new Chart(chartCanvas, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+                    datasets: [
+                        {
+                            label: config.machine_1_name,
+                            data: Array.from({ length: 24 }, () => Math.random() * 2 + 0.5),
+                            borderColor: '#00d4ff',
+                            backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: config.machine_2_name,
+                            data: Array.from({ length: 24 }, () => Math.random() * 1.8 + 0.4),
+                            borderColor: '#ff6b35',
+                            backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { usePointStyle: true }
+                        }
+                    },
+                    scales: {
+                        y: { grid: { color: '#2a3545' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            modal.classList.add('active');
+        }
+
+        function closeDrillDown() {
+            document.getElementById('drillDownModal').classList.remove('active');
+        }
+
+        // Export functionality
+        function exportData() {
+            const data = [
+                ['Time', 'Machine 1 Hours', 'Machine 2 Hours', 'Machine 1 Length (m)', 'Machine 2 Length (m)', 'Total Energy (kWh)'],
+                ...Array.from({ length: 24 }, (_, i) => [
+                    `${i}:00`,
+                    (Math.random() * 0.8 + 0.3).toFixed(2),
+                    (Math.random() * 0.75 + 0.25).toFixed(2),
+                    Math.floor(Math.random() * 2000 + 500),
+                    Math.floor(Math.random() * 1800 + 400),
+                    Math.floor(Math.random() * 80 + 50)
+                ])
+            ];
+
+            const csv = data.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `print_monitor_data_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function exportTable(machine) {
+            const tableId = machine === 'm1' ? 'electricalTableM1' : 'electricalTableM2';
+            const table = document.getElementById(tableId);
+            const rows = table.querySelectorAll('tr');
+            const data = [];
+
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('th, td');
+                const rowData = [];
+                cells.forEach(cell => {
+                    if (!cell.classList.contains('sparkline-cell')) {
+                        rowData.push(cell.textContent.trim());
+                    }
+                });
+                if (rowData.length > 0) {
+                    data.push(rowData);
+                }
+            });
+
+            const csv = data.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `electrical_params_${machine}_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+        }
+
+        // Elements SDK integration
+        async function onConfigChange(newConfig) {
+            config = { ...defaultConfig, ...newConfig };
+
+            // Update UI elements
+            document.getElementById('mainTitle').textContent = config.dashboard_title || defaultConfig.dashboard_title;
+            document.getElementById('machine1Name').textContent = config.machine_1_name || defaultConfig.machine_1_name;
+            document.getElementById('machine2Name').textContent = config.machine_2_name || defaultConfig.machine_2_name;
+
+            // Update chart legends if charts exist
+            if (charts.hoursLine) {
+                charts.hoursLine.data.datasets[0].label = config.machine_1_name;
+                charts.hoursLine.data.datasets[1].label = config.machine_2_name;
+                charts.hoursLine.update();
+            }
+        }
+
+        // Initialize SDK
+        if (window.elementSdk) {
+            window.elementSdk.init({
+                defaultConfig,
+                onConfigChange,
+                mapToCapabilities: (cfg) => ({
+                    recolorables: [
+                        {
+                            get: () => cfg.background_color || defaultConfig.background_color,
+                            set: (v) => { cfg.background_color = v; window.elementSdk.setConfig({ background_color: v }); }
+                        },
+                        {
+                            get: () => cfg.card_color || defaultConfig.card_color,
+                            set: (v) => { cfg.card_color = v; window.elementSdk.setConfig({ card_color: v }); }
+                        },
+                        {
+                            get: () => cfg.text_color || defaultConfig.text_color,
+                            set: (v) => { cfg.text_color = v; window.elementSdk.setConfig({ text_color: v }); }
+                        },
+                        {
+                            get: () => cfg.accent_color || defaultConfig.accent_color,
+                            set: (v) => { cfg.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); }
+                        },
+                        {
+                            get: () => cfg.secondary_accent || defaultConfig.secondary_accent,
+                            set: (v) => { cfg.secondary_accent = v; window.elementSdk.setConfig({ secondary_accent: v }); }
+                        }
+                    ],
+                    borderables: [],
+                    fontEditable: undefined,
+                    fontSizeable: undefined
+                }),
+                mapToEditPanelValues: (cfg) => new Map([
+                    ['dashboard_title', cfg.dashboard_title || defaultConfig.dashboard_title],
+                    ['machine_1_name', cfg.machine_1_name || defaultConfig.machine_1_name],
+                    ['machine_2_name', cfg.machine_2_name || defaultConfig.machine_2_name]
+                ])
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            updateTimestamp();
+            setInterval(updateTimestamp, 1000);
+            setInterval(updateCharts, 30000); // Auto-refresh every 30 seconds
+        });
+
+        // Close modal on backdrop click
+        document.getElementById('drillDownModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeDrillDown();
+            }
+        });
+    </script>
+    <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'9d2e712977f76ef5',t:'MTc3MTkzMDY0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
+</body>
+
+</html>
